@@ -118,7 +118,7 @@ function generatedMerkleProof(hash, hashes) {
 }
 
 function getMerkleRootFromMerkleProof(merkleProof){
-    if(!merkleProof || merkleProof.length === 0){
+    if(!Array.isArray(merkleProof) || !merkleProof || merkleProof.length === 0){
         return '';
     }
 
@@ -138,4 +138,3 @@ function getMerkleRootFromMerkleProof(merkleProof){
 const merkleRootFromMerkleProof = getMerkleRootFromMerkleProof(generatedMerkleProof);
 
 console.log('merkleRootFromMerkleProof: ', merkleRootFromMerkleProof);
-console.log('merkleRootFromMerkleProof === merkleRoot: ', merkleRootFromMerkleProof === merkleRoot);
