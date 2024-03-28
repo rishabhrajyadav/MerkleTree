@@ -34,29 +34,29 @@ const sha256 = (data) => {
            .toString('hex');
 }
 
-const getLeafNodeDirectionInTheMerkleTree = (hash,MerkleTree) => {
+function getLeafNodeDirectionInMerkleTree(hash , MerkleTree){
     const hashIndex = MerkleTree[0].findIndex(h => h === hash);
     return hashIndex % 2 === 0 ? LEFT : RIGHT;
 }
 
 function ensureEven(hashes){
-    if(hashes.length % 2 !== 0){
-        hashes.push(hashes[hashes.length - 1]);
-    }
+  if(hashes.length % 2 !== 0){
+      hashes.push(hashes[hashes.length - 1]);
+  }
 }
 
 function generateMerkleRoot(hashes){
-    if(!hashes || hashes.length == 0){
+    if(!hashes && hashes.length === 0){
         return '';
     }
-    
-    let newHashes = ensureEven(hashes);
-    let newArr = [];
 
-    for(let i = 0; i < hashes.length - 1; i+= 2){
-        const newHash = hashes[i] + hashes[i+1];
+    ensureEven(hashes);
+    const newArr = [];
+
+    for(let i = 0; i < hashes.length - 1; i+=2){
+        const newHash = hashes[i].concat(hashes[i+1]);
         const hash = sha256(newHash);
-        newArr.push(hash); 
+        newArr.push(hash);
     }
 
     if(newArr.length === 1){
@@ -67,74 +67,57 @@ function generateMerkleRoot(hashes){
 }
 
 function generateMerkleTree(hashes){
-    if(!hashes || hashes.length == 0){
+    if(!hashes && hashes.length === 0){
         return '';
     }
 
     const tree = [hashes];
-    
-    const generate = (hashes,tree) => {
-      if(hashes.length === 1){
-          return hashes;
-      }
 
-      ensureEven(hashes);
-      const newArr = [];
-      for(let i = 0; i < hashes.length - 1; i+= 2){
-        const newHash = hashes[i] + hashes[i+1];
+    const generate = (hashes , tree) => {
+       if(hashes.length === 1){
+           return hashes;
+       }
+
+       ensureEven(hashes);
+       const newArr = [];
+
+       for(let i = 0; i < hashes.length - 1; i+=2){
+        const newHash = hashes[i].concat(hashes[i+1]);
         const hash = sha256(newHash);
-        newArr.push(hash); 
+        newArr.push(hash);
+       }
+
+       tree.push(newArr);
+       return generate(newArr,tree);
     }
-      tree.push(newArr);
-      return generate(newArr,tree);
-    }
-    
-    generate(hashes, tree);
+
+    generate(hashes,tree);
     return tree;
 }
 
-function generateMerkleProof(hash, hashes) {
-    if(!hash || !hashes || hashes.length === 0) {
-        return null;
-    }
-    const tree = generateMerkleTree(hashes);
-    const merkleProof = [{
-        hash,
-        direction: getLeafNodeDirectionInMerkleTree(hash, tree)
-    }];
-    let hashIndex = tree[0].findIndex(h => h === hash);
-    for(let level = 0; level < tree.length - 1; level++) {
-        const isLeftChild = hashIndex % 2 === 0;
-        const siblingDirection = isLeftChild ? RIGHT : LEFT;
-        const siblingIndex = isLeftChild ? hashIndex + 1 : hashIndex - 1;
-        const siblingNode = {
-            hash: tree[level][siblingIndex],
-            direction: siblingDirection
-        };
-        merkleProof.push(siblingNode);
-        hashIndex = Math.floor(hashIndex / 2);
-    }
-    return merkleProof;
-}
-
-function getMerkleRootFromMerkleProof(merkleProof){
-    if(!Array.isArray(merkleProof) || !merkleProof || merkleProof.length === 0){
+function generateMerkleProof(hash,hashes){
+    if(!hashes && hashes.length === 0){
         return '';
     }
 
-    const merkleRootfromProof = merkleProof.reduce((hashProof1,hashProof2) => {
-        if(hashProof1.direction === LEFT){
-            const hash = sha256(hashProof1.hash + hashProof2.hash)
-            return hash;
-          }else{
-            const hash = sha256(hashProof2.hash + hashProof1.hash);
-            return hash;
-        }
-    })
+    ensureEven(hashes);
+    const tree = generateMerkleTree(hashes);
+    let merkleProof = [{
+        hash,
+        direction : getLeafNodeDirectionInMerkleTree(hash,MerkleTree)
+    }]
+    
+    const hashIndex = tree[0].findIndex(h => h === hash);
+    for(let level = 0; tree.length - 1; i++){
+       const siblingDirection = hashIndex % 2 === 0 ? RIGHT : LEFT;
+       const siblingIndex = hashIndex % 2 === 0 ? hashIndex + 1 : hashIndex + 2;
+       const siblingNode = {
+           hash : tree[level][hashIndex],
+           direction : siblingDirection
+       }
+       merkleProof.push(siblingNode);
+       hashIndex = Math.floor(hashIndex / 2);
+    }
 
-    return merkleRootfromProof.hash;
+    return merkleProof;
 }
-
-const merkleRootFromMerkleProof = getMerkleRootFromMerkleProof(generateMerkleProof);
-
-console.log('merkleRootFromMerkleProof: ', merkleRootFromMerkleProof);
